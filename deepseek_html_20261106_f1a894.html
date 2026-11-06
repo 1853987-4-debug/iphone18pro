@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iPhone Simulator Pro</title>
+<style>
+/* ===================== Base Reset ===================== */
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+button { font-family: inherit; border: none; background: none; color: inherit; cursor: pointer; }
+input, textarea, select { font-family: inherit; outline: none; border: none; }
+
+:root {
+  --sf: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  --sf-cn: var(--sf), "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+body {
+  min-height: 100vh; display: grid; place-items: center;
+  background: radial-gradient(circle at 30% 20%, #2b2b3a 0%, #0d0d12 60%);
+  font-family: var(--sf-cn); overflow: hidden; user-select: none;
+}
+
+/* ===================== Phone Case ===================== */
+.phone {
+  width: 393px; height: 852px; background: #08080a; border-radius: 56px; padding: 11px;
+  position: relative; box-shadow: 0 0 0 2px #33333a, 0 0 0 4px #0a0a0c, 0 40px 90px rgba(0,0,0,.75), inset 0 0 0 1px #4a4a52;
+}
+.side-btn { position: absolute; background: #2c2c32; border-radius: 3px; }
+.side-btn.vol-up { left: -3px; top: 178px; width: 4px; height: 58px; border-radius: 3px 0 0 3px; }
+.side-btn.vol-down { left: -3px; top: 252px; width: 4px; height: 58px; border-radius: 3px 0 0 3px; }
+.side-btn.power { right: -3px; top: 210px; width: 4px; height: 90px; border-radius: 0 3px 3px 0; cursor: pointer; }
+.side-btn.power:active { background: #55555c; }
+
+.screen { width: 100%; height: 100%; border-radius: 46px; overflow: hidden; position: relative; background: #000; isolation: isolate; }
+.wallpaper { position: absolute; inset: 0; z-index: 0; background: linear-gradient(160deg, #1a1a2e 0%, #16213e 45%, #0f3460 100%); transition: background .6s ease; }
+
+/* ===================== Status & Island ===================== */
+.status-bar {
+  position: absolute; top: 0; left: 0; right: 0; height: 54px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 30px; z-index: 50; color: #fff; font-size: 15px; font-weight: 600; pointer-events: none;
+}
+.status-icons { display: flex; align-items: center; gap: 6px; }
+.battery { width: 26px; height: 13px; border: 1.5px solid rgba(255,255,255,.45); border-radius: 4px; padding: 1.5px; position: relative; }
+.battery::after { content: ''; position: absolute; right: -4px; top: 3.5px; width: 2px; height: 4px; background: rgba(255,255,255,.45); border-radius: 0 2px 2px 0; }
+.battery-level { height: 100%; width: 82%; background: #fff; border-radius: 1.5px; }
+.dynamic-island {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 122px; height: 34px; background: #000; border-radius: 20px;
+  z-index: 60; display: flex; align-items: center; justify-content: center; overflow: hidden; color: #fff; font-size: 12.5px; font-weight: 500;
+  white-space: nowrap; transition: width .42s cubic-bezier(.2,.8,.2,1), height .42s, border-radius .42s;
+}
+.dynamic-island span { opacity: 0; transition: opacity .18s; }
+.dynamic-island.show { width: 250px; height: 44px; border-radius: 22px; }
+.dynamic-island.show span { opacity: 1; }
+
+/* ===================== Lock Screen ===================== */
+.lock-screen {
+  position: absolute; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; padding-top: 92px; color: #fff;
+  background: rgba(0,0,0,0.25); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); transition: transform .55s, opacity .45s;
+}
+.lock-screen.unlocked { transform: translateY(-105%); opacity: 0; pointer-events: none; }
+.lock-date { font-size: 20px; font-weight: 500; }
+.lock-time { font-size: 88px; font-weight: 500; line-height: 1.02; letter-spacing: -3px; margin-top: -2px; font-variant-numeric: tabular-nums; }
+.unlock-hint { margin-top: auto; margin-bottom: 44px; text-align: center; font-size: 13px; opacity: .8; animation: float 2.2s infinite; }
+@keyframes float { 0%, 100% { transform: translateY(0); opacity: .65; } 50% { transform: translateY(-7px); opacity: 1; } }
+
+/* ===================== Home Screen ===================== */
+.home-screen { position: absolute; inset: 0; z-index: 10; display: flex; flex-direction: column; padding-top: 62px; transition: transform .35s, opacity .3s; }
+.home-screen.hidden { transform: scale(.94); opacity: 0; pointer-events: none; }
+.pages-container { flex: 1; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; }
+.pages-container::-webkit-scrollbar { display: none; }
+.page { min-width: 100%; scroll-snap-align: start; padding: 0 22px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px 10px; align-content: start; }
+.app-item { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; }
+.app-icon { width: 60px; height: 60px; border-radius: 15px; display: grid; place-items: center; font-size: 28px; box-shadow: 0 5px 14px rgba(0,0,0,.3); transition: transform .16s; }
+.app-item:active .app-icon { transform: scale(.88); }
+.app-label { font-size: 10.5px; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.6); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70px; }
+.page-dots { display: flex; gap: 8px; justify-content: center; margin-top: 10px; margin-bottom: 14px; }
+.page-dots span { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.35); cursor: pointer; transition: background .2s; }
+.page-dots span.active { background: #fff; }
+.dock { margin: 0 12px 20px; height: 90px; border-radius: 34px; background: rgba(255,255,255,.16); backdrop-filter: blur(24px); display: flex; align-items: center; justify-content: space-around; padding: 0 14px; border: 1px solid rgba(255,255,255,.12); flex-shrink: 0; }
+
+/* ===================== App Views Generic ===================== */
+.app-view {
+  position: absolute; inset: 0; z-index: 20; padding: 64px 20px 40px; color: #fff; display: flex; flex-direction: column;
+  transform: translateX(100%); transition: transform .4s cubic-bezier(.32,.72,0,1); overflow-y: auto; overflow-x: hidden;
+}
+.app-view.active { transform: translateX(0); }
+.app-view::-webkit-scrollbar { display: none; }
+.app-header { font-size: 32px; font-weight: 700; letter-spacing: -.6px; margin-bottom: 18px; flex-shrink: 0; }
+
+/* ===================== APP SPECIFIC ===================== */
+/* Phone App */
+.phone-app { background: #141416; padding: 64px 20px 20px; display: flex; flex-direction: column; }
+.dialer-display { text-align: center; font-size: 40px; font-weight: 300; margin: 20px 0 30px; min-height: 50px; letter-spacing: 2px; }
+.dialer-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 0 auto; width: 280px; }
+.dial-btn { width: 70px; height: 70px; border-radius: 50%; background: #2c2c2e; font-size: 32px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.dial-btn:active { background: #3a3a3c; }
+.dial-sub { font-size: 10px; color: #8e8e93; letter-spacing: 1px; margin-top: -5px; }
+.call-btn { width: 70px; height: 70px; border-radius: 50%; background: #34c759; color: #fff; font-size: 30px; display: grid; place-items: center; margin: 20px auto 0; }
+.call-btn:active { filter: brightness(0.8); }
+.call-screen { position: absolute; inset: 0; background: #1c1c1e; z-index: 10; display: flex; flex-direction: column; align-items: center; padding-top: 120px; transform: translateY(100%); transition: transform .3s; }
+.call-screen.active { transform: translateY(0); }
+.call-avatar { width: 100px; height: 100px; border-radius: 50%; background: #333; display: grid; place-items: center; font-size: 50px; margin-bottom: 20px; }
+.call-number { font-size: 32px; font-weight: 500; margin-bottom: 10px; }
+.call-status { font-size: 16px; color: #8e8e93; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+.end-call-btn { width: 70px; height: 70px; border-radius: 50%; background: #ff3b30; color: #fff; font-size: 30px; display: grid; place-items: center; margin-top: auto; margin-bottom: 60px; }
+
+/* Camera */
+.camera-app { background: #000; padding: 0; position: relative; }
+#cameraFeed { width: 100%; height: 100%; object-fit: cover; }
+.camera-controls { position: absolute; bottom: 40px; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 40px; }
+.shutter-btn { width: 70px; height: 70px; border-radius: 50%; border: 4px solid #fff; background: rgba(255,255,255,0.3); }
+.shutter-btn:active { background: #fff; }
+.camera-close { position: absolute; top: 60px; left: 20px; font-size: 24px; background: rgba(0,0,0,0.5); width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; }
+
+/* Clock */
+.clock-app { background: #000; padding: 64px 0 0 0; }
+.clock-tabs { display: flex; justify-content: space-around; border-bottom: 1px solid #2c2c2e; padding-bottom: 10px; margin-bottom: 20px; }
+.clock-tab { font-size: 15px; color: #8e8e93; cursor: pointer; }
+.clock-tab.active { color: #ff9f0a; font-weight: 600; }
+.clock-content { padding: 0 20px; display: flex; flex-direction: column; align-items: center; flex: 1; }
+.clock-world-time { font-size: 64px; font-weight: 200; font-variant-numeric: tabular-nums; margin: 20px 0; }
+.clock-city { font-size: 20px; color: #8e8e93; margin-bottom: 40px; }
+.sw-time { font-size: 80px; font-weight: 200; font-variant-numeric: tabular-nums; margin: 40px 0; }
+.sw-buttons { display: flex; gap: 40px; margin-top: 20px; }
+.sw-btn { width: 90px; height: 90px; border-radius: 50%; font-size: 18px; font-weight: 500; background: #333; }
+.sw-btn.green { background: #0d3b22; color: #30d158; }
+.sw-btn.red { background: #3b0d0d; color: #ff453a; }
+
+/* Weather */
+.weather-app { background: linear-gradient(170deg, #0f4c75 0%, #1b262c 100%); padding: 64px 20px 40px; }
+.smg-header { text-align: center; margin-bottom: 20px; }
+.smg-main { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.1); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+.smg-temp { font-size: 64px; font-weight: 200; }
+.smg-districts { display: flex; flex-direction: column; gap: 12px; }
+.district-card { background: rgba(255,255,255,0.1); border-radius: 14px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; }
+
+/* Social Media */
+.social-app { background: #0f0f11; padding: 64px 16px 40px; }
+.post-input-area { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; background: #1c1c1e; padding: 14px; border-radius: 14px; }
+.post-input-area textarea { width: 100%; height: 50px; background: transparent; color: #fff; resize: none; font-size: 15px; }
+.media-upload-row { display: flex; justify-content: space-between; align-items: center; }
+.media-preview { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; display: none; }
+.upload-btn { padding: 6px 12px; border-radius: 10px; background: #333; color: #fff; font-size: 13px; }
+.post-btn { padding: 6px 16px; border-radius: 10px; background: #0a84ff; color: #fff; font-weight: 600; }
+.yt-card { background: #1c1c1e; border-radius: 14px; overflow: hidden; margin-bottom: 16px; }
+.yt-media { width: 100%; max-height: 250px; object-fit: cover; }
+.yt-info { padding: 14px; }
+.fb-card { background: #fff; color: #000; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+.fb-media { width: 100%; max-height: 250px; object-fit: cover; border-radius: 8px; margin-top: 10px; }
+.ig-card { background: #fff; color: #000; margin-bottom: 20px; padding-bottom: 20px; border-radius: 8px; overflow: hidden; }
+.ig-media { width: 100%; max-height: 300px; object-fit: cover; }
+.ig-caption { padding: 10px; font-size: 14px; }
+
+/* Translate */
+.translate-app { background: #141416; }
+.lang-row { display: flex; gap: 10px; margin-bottom: 16px; }
+.lang-row select { flex: 1; height: 40px; background: #2c2c2e; color: #fff; border-radius: 10px; padding: 0 10px; font-size: 14px; }
+.tr-box { background: #1c1c1e; border-radius: 14px; padding: 16px; margin-bottom: 16px; }
+.tr-box textarea { width: 100%; height: 80px; background: transparent; color: #fff; font-size: 18px; resize: none; }
+.tr-btn { width: 100%; padding: 14px; background: #0a84ff; color: #fff; border-radius: 12px; font-weight: 600; }
+
+/* Photos & Placeholders */
+.photos-app { background: #000; }
+.photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.photo-grid img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; }
+.generic-app { background: #141416; align-items: center; justify-content: center; }
+.generic-icon { font-size: 80px; margin-bottom: 20px; }
+.generic-title { font-size: 28px; font-weight: 700; margin-bottom: 10px; }
+
+/* WeChat */
+.wechat-app { background: #141416; padding-bottom: 0; position: relative; }
+.reg-container { display: flex; flex-direction: column; gap: 16px; margin-top: 40px; align-items: center; }
+.reg-container input { width: 100%; height: 50px; border-radius: 12px; background: #2c2c2e; color: #fff; padding: 0 16px; font-size: 18px; text-align: center; letter-spacing: 2px; }
+.reg-container button { width: 100%; height: 50px; border-radius: 12px; background: #07c160; color: #fff; font-size: 16px; font-weight: 600; }
+.chat-list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.chat-list-header button { color: #07c160; font-size: 15px; }
+.new-friends-btn { background: #2c2c2e; border-radius: 14px; padding: 14px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+.req-badge { background: #ff3b30; color: #fff; font-size: 12px; padding: 2px 8px; border-radius: 10px; font-weight: 600; display: none; }
+.add-friend-bar { display: flex; gap: 10px; margin-bottom: 20px; }
+.add-friend-bar input { flex: 1; height: 40px; border-radius: 10px; background: #2c2c2e; color: #fff; padding: 0 12px; }
+.add-friend-bar button { height: 40px; padding: 0 16px; border-radius: 10px; background: #07c160; color: #fff; }
+.chat-items { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-bottom: 20px; }
+.chat-item { display: flex; align-items: center; gap: 14px; padding: 14px; background: #2c2c2e; border-radius: 14px; }
+.chat-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #07c160, #059c4c); display: grid; place-items: center; font-size: 20px; }
+.chat-info { flex: 1; cursor: pointer; }
+.chat-name { font-size: 16px; font-weight: 500; }
+.chat-preview { font-size: 13px; color: #8e8e93; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.delete-friend-btn { color: #ff3b30; font-size: 20px; padding: 10px; }
+.requests-screen { position: absolute; inset: 0; background: #141416; z-index: 5; padding: 64px 20px; transform: translateX(100%); transition: transform .3s; }
+.requests-screen.active { transform: translateX(0); }
+.req-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.req-header button { color: #07c160; font-size: 24px; }
+.req-item { background: #2c2c2e; border-radius: 14px; padding: 14px; display: flex; justify-content: space-between; margin-bottom: 12px; }
+.req-actions button { padding: 6px 12px; border-radius: 8px; font-size: 13px; margin-left: 8px; }
+.btn-accept { background: #07c160; color: #fff; }
+.btn-decline { background: #3a3a3c; color: #ff3b30; }
+.chat-room { position: absolute; inset: 0; background: #000; z-index: 10; display: flex; flex-direction: column; transform: translateX(100%); transition: transform .3s; }
+.chat-room.active { transform: translateX(0); }
+.chat-room-header { height: 60px; display: flex; align-items: center; padding: 0 16px; background: #1c1c1e; border-bottom: 1px solid #2c2c2e; gap: 12px; }
+.chat-room-header button { color: #07c160; font-size: 22px; }
+.chat-room-messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #0f0f11; }
+.msg-bubble { max-width: 75%; padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; word-break: break-word; }
+.msg-bubble.me { background: #07c160; color: #fff; align-self: flex-end; }
+.msg-bubble.friend { background: #2c2c2e; color: #fff; align-self: flex-start; }
+.chat-room-input { padding: 12px 16px; background: #1c1c1e; display: flex; gap: 8px; padding-bottom: 30px; align-items: center; }
+.chat-room-input input[type="text"] { flex: 1; height: 40px; border-radius: 20px; background: #2c2c2e; color: #fff; padding: 0 16px; }
+.chat-room-input button { width: 40px; height: 40px; border-radius: 50%; background: #07c160; color: #fff; display: grid; place-items: center; }
+
+/* Home Bar */
+.home-bar { position: absolute; bottom: 9px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.85); z-index: 55; }
+
+@media (max-height: 920px) { .phone { transform: scale(.88); } }
+@media (max-height: 800px) { .phone { transform: scale(.76); } }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="side-btn vol-up"></div><div class="side-btn vol-down"></div><div class="side-btn power" id="powerBtn"></div>
+
+  <div class="screen" id="screen">
+    <div class="wallpaper" id="wallpaper"></div>
+
+    <!-- Status -->
+    <div class="status-bar">
+      <span id="statusTime">9:41</span>
+      <div class="status-icons">
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="6" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+        <div class="battery"><div class="battery-level"></div></div>
+      </div>
+    </div>
+
+    <div class="dynamic-island" id="island"><span id="islandText"></span></div>
+
+    <!-- Lock Screen -->
+    <div class="lock-screen" id="lockScreen">
+      <div class="lock-date" id="lockDate">October 30, Friday</div>
+      <div class="lock-time" id="lockTime">9:41</div>
+      <div class="unlock-hint"><div style="font-size:20px;margin-bottom:4px;">︿</div><div>Swipe up to unlock</div></div>
+    </div>
+
+    <!-- Home Screen (2 Pages) -->
+    <div class="home-screen" id="homeScreen">
+      <div class="pages-container" id="pagesContainer">
+        <div class="page" id="page1"></div>
+        <div class="page" id="page2"></div>
+      </div>
+      <div class="page-dots" id="pageDots">
+        <span class="active" onclick="scrollToPage(0)"></span>
+        <span onclick="scrollToPage(1)"></span>
+      </div>
+      <div class="dock" id="dock"></div>
+    </div>
+
+    <!-- ================= APP VIEWS ================= -->
+    
+    <!-- Phone App -->
+    <div class="app-view phone-app" id="app-phone">
+      <div class="app-header" style="text-align:center;">Phone</div>
+      <div style="text-align:center; font-size:12px; color:#8e8e93; margin-bottom:10px;" id="myPhoneDisplay">My Number: ...</div>
+      <div class="dialer-display" id="dialerDisplay"></div>
+      <div class="dialer-grid">
+        <div class="dial-btn" onclick="dial('1')">1</div>
+        <div class="dial-btn" onclick="dial('2')">2<span class="dial-sub">ABC</span></div>
+        <div class="dial-btn" onclick="dial('3')">3<span class="dial-sub">DEF</span></div>
+        <div class="dial-btn" onclick="dial('4')">4<span class="dial-sub">GHI</span></div>
+        <div class="dial-btn" onclick="dial('5')">5<span class="dial-sub">JKL</span></div>
+        <div class="dial-btn" onclick="dial('6')">6<span class="dial-sub">MNO</span></div>
+        <div class="dial-btn" onclick="dial('7')">7<span class="dial-sub">PQRS</span></div>
+        <div class="dial-btn" onclick="dial('8')">8<span class="dial-sub">TUV</span></div>
+        <div class="dial-btn" onclick="dial('9')">9<span class="dial-sub">WXYZ</span></div>
+        <div class="dial-btn" onclick="dial('*')">*</div>
+        <div class="dial-btn" onclick="dial('0')">0<span class="dial-sub">+</span></div>
+        <div class="dial-btn" onclick="dial('#')">#</div>
+      </div>
+      <button class="call-btn" onclick="makeCall()">📞</button>
+
+      <!-- Simulated Call Screen -->
+      <div class="call-screen" id="callScreen">
+        <div class="call-avatar">👤</div>
+        <div class="call-number" id="callNumberDisplay">1234</div>
+        <div class="call-status" id="callStatus">Calling...</div>
+        <button class="end-call-btn" onclick="endCall()">📵</button>
+      </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="app-view calc-app" id="app-calculator" style="background:#000; padding:64px 16px 34px;">
+      <div style="flex:1; display:flex; align-items:flex-end; justify-content:flex-end; padding:0 12px 22px;"><div id="calcResult" style="font-size:72px; font-weight:300; font-variant-numeric:tabular-nums;">0</div></div>
+      <div id="calcKeys" style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px;">
+        <button class="ck fn" data-k="AC">AC</button><button class="ck fn" data-k="±">±</button><button class="ck fn" data-k="%">%</button><button class="ck op" data-k="÷">÷</button>
+        <button class="ck" data-k="7">7</button><button class="ck" data-k="8">8</button><button class="ck" data-k="9">9</button><button class="ck op" data-k="×">×</button>
+        <button class="ck" data-k="4">4</button><button class="ck" data-k="5">5</button><button class="ck" data-k="6">6</button><button class="ck op" data-k="-">−</button>
+        <button class="ck" data-k="1">1</button><button class="ck" data-k="2">2</button><button class="ck" data-k="3">3</button><button class="ck op" data-k="+">+</button>
+        <button class="ck zero" data-k="0" style="grid-column: span 2; border-radius: 40px; justify-content: flex-start; padding-left: 31px;">0</button><button class="ck" data-k=".">.</button><button class="ck op" data-k="=">=</button>
+      </div>
+    </div>
+
+    <!-- Clock -->
+    <div class="app-view clock-app" id="app-clock">
+      <div class="clock-tabs">
+        <div class="clock-tab active" onclick="switchClockTab('world')">World Clock</div>
+        <div class="clock-tab" onclick="switchClockTab('stopwatch')">Stopwatch</div>
+      </div>
+      <div class="clock-content" id="clockWorld">
+        <div class="clock-world-time" id="worldTime">00:00:00</div>
+        <div class="clock-city">Macau (GMT+8)</div>
+      </div>
+      <div class="clock-content" id="clockStopwatch" style="display:none;">
+        <div class="sw-time" id="swTime">00:00.00</div>
+        <div class="sw-buttons"><button class="sw-btn" id="swReset">Reset</button><button class="sw-btn green" id="swStart">Start</button></div>
+      </div>
+    </div>
+
+    <!-- Weather -->
+    <div class="app-view weather-app" id="app-weather">
+      <div class="smg-header"><div class="smg-title">SMG Macau</div><div class="smg-sub">地球物理暨氣象局</div></div>
+      <div class="smg-main"><div class="smg-temp">26°</div><div class="smg-info"><div>Sunny / 晴</div><div>Humidity: 78%</div><div>Wind: SE 15 km/h</div></div></div>
+      <div class="smg-districts">
+        <div class="district-card"><div class="district-name">Macau Peninsula 澳門半島</div><div class="district-temp">26°C</div></div>
+        <div class="district-card"><div class="district-name">Taipa 氹仔</div><div class="district-temp">25°C</div></div>
+        <div class="district-card"><div class="district-name">Coloane 路環</div><div class="district-temp">24°C</div></div>
+      </div>
+    </div>
+
+    <!-- Translate -->
+    <div class="app-view translate-app" id="app-translate">
+      <div class="app-header">Translate</div>
+      <div class="lang-row"><select id="srcLang"><option value="en">English</option><option value="zh">Chinese</option></select><select id="targetLang"><option value="es">Spanish</option><option value="pt">Portuguese</option><option value="ja">Japanese</option></select></div>
+      <div class="tr-box"><textarea id="trInput" placeholder="Enter text..."></textarea></div>
+      <button class="tr-btn" onclick="doTranslate()">Translate</button>
+      <div class="tr-box" style="margin-top: 16px;"><div id="trOutput" style="font-size: 18px; min-height: 50px; color: #0a84ff;">Result will appear here</div></div>
+    </div>
+
+    <!-- Camera -->
+    <div class="app-view camera-app" id="app-camera">
+      <video id="cameraFeed" autoplay playsinline></video>
+      <div class="camera-close" onclick="goHome()">✕</div>
+      <div class="camera-controls"><button class="shutter-btn" onclick="capturePhoto()"></button></div>
+    </div>
+
+    <!-- Photos -->
+    <div class="app-view photos-app" id="app-photos"><div class="app-header">Photos</div><div class="photo-grid" id="photoGrid"></div></div>
+
+    <!-- Social Media -->
+    <div class="app-view social-app" id="app-youtube">
+      <div class="app-header" style="color:#ff0000;">▶ YouTube</div>
+      <div class="post-input-area">
+        <textarea id="ytPostInput" placeholder="Video title..."></textarea>
+        <div class="media-upload-row">
+          <input type="file" id="ytMediaFile" accept="image/*,video/*" style="display:none;" onchange="previewMedia(this, 'yt')">
+          <button class="upload-btn" onclick="document.getElementById('ytMediaFile').click()">📁 Upload Media</button>
+          <img id="ytPreview" class="media-preview">
+          <button class="post-btn" onclick="addPost('youtube')">Post</button>
+        </div>
+      </div>
+      <div id="ytFeed"></div>
+    </div>
+
+    <div class="app-view social-app" id="app-facebook" style="background:#f0f2f5; color:#000;">
+      <div class="app-header" style="color:#1877F2;">facebook</div>
+      <div class="post-input-area" style="background:#fff;">
+        <textarea id="fbPostInput" placeholder="What's on your mind?" style="color:#000;"></textarea>
+        <div class="media-upload-row">
+          <input type="file" id="fbMediaFile" accept="image/*,video/*" style="display:none;" onchange="previewMedia(this, 'fb')">
+          <button class="upload-btn" onclick="document.getElementById('fbMediaFile').click()">📷 Photo/Video</button>
+          <img id="fbPreview" class="media-preview">
+          <button class="post-btn" onclick="addPost('facebook')">Post</button>
+        </div>
+      </div>
+      <div id="fbFeed"></div>
+    </div>
+
+    <div class="app-view social-app" id="app-instagram" style="background:#fff; color:#000;">
+      <div class="app-header" style="color:#000;">Instagram</div>
+      <div class="post-input-area" style="background:#fafafa; border:1px solid #ddd;">
+        <textarea id="igPostInput" placeholder="Caption..." style="color:#000;"></textarea>
+        <div class="media-upload-row">
+          <input type="file" id="igMediaFile" accept="image/*,video/*" style="display:none;" onchange="previewMedia(this, 'ig')">
+          <button class="upload-btn" onclick="document.getElementById('igMediaFile').click()">🖼️ Select Media</button>
+          <img id="igPreview" class="media-preview">
+          <button class="post-btn" onclick="addPost('instagram')">Share</button>
+        </div>
+      </div>
+      <div id="igFeed"></div>
+    </div>
+
+    <!-- WeChat -->
+    <div class="app-view wechat-app" id="app-wechat">
+      <div class="app-header">WeChat</div>
+      <div id="regState">
+        <div class="reg-container"><input type="tel" id="regPhoneInput" placeholder="8-digit number" maxlength="8"><button id="regBtn">Log In</button></div>
+        <div style="font-size: 13px; color: #8e8e93; text-align: center; margin-top: 20px;">Try: 11112222 or 33334444</div>
+      </div>
+      <div id="chatListState" style="display: none; flex-direction: column; height: 100%;">
+        <div class="chat-list-header"><span style="font-size: 13px; color: #8e8e93;" id="myNumDisplay"></span><button id="switchAccBtn">Switch Account</button></div>
+        <div class="new-friends-btn" id="newFriendsBtn"><div style="display:flex; align-items:center; gap:10px;"><div style="width:40px;height:40px;border-radius:50%;background:#ff9f0a;display:grid;place-items:center;font-size:20px;">👋</div><div style="font-size:16px;">New Friends</div></div><div class="req-badge" id="reqBadge">0</div></div>
+        <div class="add-friend-bar"><input type="tel" id="friendPhoneInput" placeholder="Add by 8-digit number..." maxlength="8"><button id="addFriendBtn">Add</button></div>
+        <div class="chat-items" id="chatItems"></div>
+      </div>
+      <div class="requests-screen" id="requestsScreen"><div class="req-header"><button id="backToChatListFromReq">‹</button><div style="font-size: 24px; font-weight: bold;">New Friends</div></div><div id="requestsList"></div></div>
+      <div class="chat-room" id="chatRoom">
+        <div class="chat-room-header"><button id="backToChatList">‹</button><div id="crName">Friend</div></div>
+        <div class="chat-room-messages" id="crMessages"></div>
+        <div class="chat-room-input"><input type="text" id="crInput" placeholder="Message"><button id="crSendBtn">↑</button></div>
+      </div>
+    </div>
+
+    <!-- Generic App -->
+    <div class="app-view generic-app" id="app-generic"><div class="generic-icon" id="genericIcon">📱</div><div class="generic-title" id="genericTitle">App</div></div>
+
+    <div class="home-bar" id="homeBar"></div>
+  </div>
+</div>
+
+<script>
+/* ================= DATA & STATE ================= */
+let myRandomPhone = Math.floor(10000000 + Math.random() * 90000000).toString();
+
+const PAGE_1_APPS = [
+  { id:'appstore', name:'App Store', icon:'🛍️', bg:'linear-gradient(160deg,#1cc8ee,#0f7c9e)' },
+  { id:'weather', name:'Weather', icon:'🌤️', bg:'linear-gradient(160deg,#4facfe,#00b8f2)' },
+  { id:'calculator', name:'Calculator', icon:'🧮', bg:'linear-gradient(160deg,#ffb03a,#ff7a00)' },
+  { id:'clock', name:'Clock', icon:'⏰', bg:'linear-gradient(160deg,#3a3a3c,#0a0a0a)' },
+  { id:'notes', name:'Notes', icon:'📝', bg:'linear-gradient(160deg,#ffe066,#f5b301)' },
+  { id:'music', name:'Music', icon:'🎵', bg:'linear-gradient(160deg,#ff5f6d,#ffc371)' },
+  { id:'photos', name:'Photos', icon:'🌈', bg:'linear-gradient(160deg,#f8f9fa,#c9d6e3)' },
+  { id:'settings', name:'Settings', icon:'⚙️', bg:'linear-gradient(160deg,#9aa4ad,#5c6b73)' },
+  { id:'calendar', name:'Calendar', icon:'📅', bg:'linear-gradient(160deg,#ff9f0a,#ff7a00)' },
+  { id:'reminders', name:'Reminders', icon:'☑️', bg:'linear-gradient(160deg,#f8f9fa,#c9d6e3)' },
+  { id:'freeform', name:'Freeform', icon:'🖌️', bg:'linear-gradient(160deg,#f093fb,#f5576c)' },
+  { id:'mail', name:'Mail', icon:'✉️', bg:'linear-gradient(160deg,#4facfe,#00b8f2)' },
+  { id:'health', name:'Health', icon:'❤️', bg:'linear-gradient(160deg,#ff5f6d,#ffc371)' },
+  { id:'wallet', name:'Wallet', icon:'💳', bg:'linear-gradient(160deg,#43e97b,#1fc26b)' },
+  { id:'camera', name:'Camera', icon:'📷', bg:'linear-gradient(160deg,#9aa4ad,#5c6b73)' },
+  { id:'compass', name:'Compass', icon:'🧭', bg:'linear-gradient(160deg,#3a3a3c,#0a0a0a)' },
+  { id:'translate', name:'Translate', icon:'🌐', bg:'linear-gradient(160deg,#4facfe,#00b8f2)' },
+  { id:'maps', name:'Maps', icon:'🗺️', bg:'linear-gradient(160deg,#43e97b,#1fc26b)' },
+  { id:'findmy', name:'Find My', icon:'📍', bg:'linear-gradient(160deg,#43e97b,#1fc26b)' },
+];
+const PAGE_2_APPS = [
+  { id:'faceme', name:'FaceMe', icon:'🪞', bg:'linear-gradient(160deg,#ff9a9e,#fecfef)' },
+  { id:'messages', name:'Messages', icon:'💬', bg:'linear-gradient(160deg,#5ee27d,#2ecc71)' },
+  { id:'facetime', name:'FaceTime', icon:'📹', bg:'linear-gradient(160deg,#43e97b,#1fc26b)' },
+  { id:'files', name:'Files', icon:'📁', bg:'linear-gradient(160deg,#4facfe,#00b8f2)' },
+  { id:'keynote', name:'Keynote', icon:'📊', bg:'linear-gradient(160deg,#4facfe,#00b8f2)' },
+  { id:'pages', name:'Pages', icon:'📄', bg:'linear-gradient(160deg,#ff9f0a,#ff7a00)' },
+  { id:'numbers', name:'Numbers', icon:'📈', bg:'linear-gradient(160deg,#43e97b,#1fc26b)' },
+  { id:'fitness', name:'Fitness', icon:'🏃', bg:'linear-gradient(160deg,#0a84ff,#00b8f2)' },
+  { id:'watch', name:'Watch', icon:'⌚', bg:'linear-gradient(160deg,#3a3a3c,#0a0a0a)' },
+  { id:'home', name:'Home', icon:'🏠', bg:'linear-gradient(160deg,#ff9f0a,#ff7a00)' },
+];
+const DOCK = [
+  { id:'phone', name:'Phone', icon:'📞', bg:'linear-gradient(160deg,#43e97b,#1fc26b)' },
+  { id:'safari', name:'Safari', icon:'🧭', bg:'linear-gradient(160deg,#4facfe,#00b8f2)' },
+  { id:'wechat', name:'WeChat', icon:'💬', bg:'linear-gradient(160deg,#07c160,#059c4c)' },
+  { id:'music', name:'Music', icon:'🎵', bg:'linear-gradient(160deg,#ff5f6d,#ffc371)' },
+];
+const STORE_APPS = [
+  { id:'youtube', name:'YouTube', icon:'▶️', bg:'#ff0000' },
+  { id:'roblox', name:'Roblox', icon:'🧱', bg:'#e62b2a' },
+  { id:'facebook', name:'Facebook', icon:'📘', bg:'#1877F2' },
+  { id:'instagram', name:'Instagram', icon:'📸', bg:'linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)' },
+];
+
+/* ================= UTILS ================= */
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2, '0');
+let islandTimer;
+function toast(msg) {
+  $('islandText').textContent = msg; $('island').classList.add('show');
+  clearTimeout(islandTimer); islandTimer = setTimeout(() => $('island').classList.remove('show'), 1700);
+}
+function escapeHTML(str) { return str.replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+/* ================= TIME & HOME ================= */
+function updateTime() {
+  const d = new Date(); const h = d.getHours(), m = d.getMinutes(); const h12 = h % 12 || 12;
+  $('statusTime').textContent = `${h12}:${pad(m)}`; $('lockTime').textContent = `${h12}:${pad(m)}`;
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  $('lockDate').textContent = `${months[d.getMonth()]} ${d.getDate()}, ${days[d.getDay()]}`;
+}
+updateTime(); setInterval(updateTime, 1000);
+
+let downloadedApps = JSON.parse(localStorage.getItem('downloaded_apps')) || [];
+function renderAppIcon(a) { return `<div class="app-item" data-app="${a.id}"><div class="app-icon" style="background:${a.bg}">${a.icon}</div><div class="app-label">${a.name}</div></div>`; }
+function renderHomeScreen() {
+  $('page1').innerHTML = PAGE_1_APPS.map(renderAppIcon).join('');
+  let page2Apps = [...PAGE_2_APPS];
+  downloadedApps.forEach(id => { const app = STORE_APPS.find(a => a.id === id); if (app) page2Apps.push(app); });
+  $('page2').innerHTML = page2Apps.map(renderAppIcon).join('');
+}
+renderHomeScreen();
+$('dock').innerHTML = DOCK.map(a => `<div class="app-item" data-app="${a.id}"><div class="app-icon" style="background:${a.bg}">${a.icon}</div></div>`).join('');
+
+const container = $('pagesContainer');
+container.addEventListener('scroll', () => {
+  const page = Math.round(container.scrollLeft / container.clientWidth);
+  document.querySelectorAll('.page-dots span').forEach((dot, i) => { dot.classList.toggle('active', i === page); });
+});
+window.scrollToPage = function(idx) { container.scrollTo({ left: idx * container.clientWidth, behavior: 'smooth' }); };
+
+/* ================= NAVIGATION ================= */
+let locked = true; let ignoreClickUntil = 0;
+function unlock() { if (!locked) return; locked = false; $('lockScreen').classList.add('unlocked'); ignoreClickUntil = Date.now() + 450; }
+function lockScreen() { goHome(); locked = true; $('lockScreen').classList.remove('unlocked'); toast('Locked'); }
+function goHome() {
+  document.querySelectorAll('.app-view.active').forEach(el => el.classList.remove('active'));
+  $('homeScreen').classList.remove('hidden');
+  stopCamera();
+}
+
+$('lockScreen').addEventListener('click', unlock);
+$('powerBtn').addEventListener('click', () => locked ? unlock() : lockScreen());
+$('homeBar').addEventListener('click', goHome);
+
+$('screen').addEventListener('click', e => {
+  if (Date.now() < ignoreClickUntil) return;
+  const item = e.target.closest('[data-app]'); if (!item) return; openApp(item.dataset.app);
+});
+
+function openApp(id) {
+  const view = $('app-' + id);
+  if (view) {
+    $('homeScreen').classList.add('hidden'); view.classList.add('active');
+    if (id === 'camera') startCamera();
+    if (id === 'wechat') renderWeChat();
+    if (id === 'phone') $('myPhoneDisplay').textContent = `My Number: ${myRandomPhone}`;
+    if (id === 'photos') renderPhotos();
+    if (id === 'clock') updateClockTabs();
+    if (id === 'youtube') renderYT();
+    if (id === 'facebook') renderFB();
+    if (id === 'instagram') renderIG();
+    return;
+  }
+  const app = [...PAGE_1_APPS, ...PAGE_2_APPS, ...STORE_APPS].find(a => a.id === id);
+  if (app) {
+    $('genericTitle').textContent = app.name; $('genericIcon').textContent = app.icon;
+    $('homeScreen').classList.add('hidden'); $('app-generic').classList.add('active');
+  }
+}
+
+/* ================= PHONE APP ================= */
+let dialNumber = '';
+function dial(num) { dialNumber += num; $('dialerDisplay').textContent = dialNumber; }
+function makeCall() {
+  if (!dialNumber) return;
+  $('callNumberDisplay').textContent = dialNumber;
+  $('callScreen').classList.add('active');
+  $('callStatus').textContent = 'Calling...';
+  setTimeout(() => { if($('callScreen').classList.contains('active')) $('callStatus').textContent = 'Ringing...'; }, 3000);
+}
+function endCall() {
+  $('callScreen').classList.remove('active');
+  dialNumber = ''; $('dialerDisplay').textContent = '';
+}
+
+/* ================= CAMERA APP ================= */
+let videoStream = null;
+async function startCamera() {
+  try {
+    videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+    $('cameraFeed').srcObject = videoStream;
+  } catch (err) { toast('Camera access denied or unavailable'); }
+}
+function stopCamera() { if (videoStream) { videoStream.getTracks().forEach(t => t.stop()); videoStream = null; } }
+
+function capturePhoto() {
+  if (!videoStream) return;
+  const video = $('cameraFeed');
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  const dataUrl = canvas.toDataURL('image/png');
+  let photos = JSON.parse(localStorage.getItem('my_photos')) || [];
+  photos.unshift(dataUrl); localStorage.setItem('my_photos', JSON.stringify(photos));
+  toast('Photo saved to Photos!');
+}
+
+/* ================= PHOTOS APP ================= */
+function renderPhotos() {
+  let photos = JSON.parse(localStorage.getItem('my_photos')) || [];
+  const defaults = ['#667eea','#f093fb','#4facfe','#43e97b','#fa709a','#30cfd0'];
+  let html = photos.map(p => `<img src="${p}">`).join('');
+  html += defaults.map(g => `<div style="aspect-ratio:1; background:${g}; border-radius:6px;"></div>`).join('');
+  $('photoGrid').innerHTML = html;
+}
+
+/* ================= CLOCK APP ================= */
+let activeClockTab = 'world';
+function updateClockTabs() {
+  if (activeClockTab === 'world') {
+    $('clockWorld').style.display = 'flex'; $('clockStopwatch').style.display = 'none';
+    document.querySelectorAll('.clock-tab')[0].classList.add('active'); document.querySelectorAll('.clock-tab')[1].classList.remove('active');
+  } else {
+    $('clockWorld').style.display = 'none'; $('clockStopwatch').style.display = 'flex';
+    document.querySelectorAll('.clock-tab')[0].classList.remove('active'); document.querySelectorAll('.clock-tab')[1].classList.add('active');
+  }
+}
+window.switchClockTab = function(tab) { activeClockTab = tab; updateClockTabs(); };
+setInterval(() => { if($('app-clock').classList.contains('active')) $('worldTime').textContent = new Date().toLocaleTimeString('en-GB'); }, 1000);
+
+let swRunning = false, swStartTs = 0, swElapsed = 0, swRAF = null;
+function swTick() {
+  const now = swElapsed + (swRunning ? performance.now() - swStartTs : 0);
+  $('swTime').textContent = `${pad(Math.floor(now/60000))}:${pad(Math.floor((now%60000)/1000))}.${pad(Math.floor((now%1000)/10))}`;
+  if (swRunning) swRAF = requestAnimationFrame(swTick);
+}
+$('swStart').addEventListener('click', () => {
+  const btn = $('swStart');
+  if (!swRunning) { swRunning = true; swStartTs = performance.now(); btn.textContent = 'Stop'; btn.classList.replace('green','red'); swTick(); }
+  else { swRunning = false; swElapsed += performance.now() - swStartTs; cancelAnimationFrame(swRAF); btn.textContent = 'Start'; btn.classList.replace('red','green'); }
+});
+$('swReset').addEventListener('click', () => { if (swRunning) return; swElapsed = 0; $('swTime').textContent = '00:00.00'; });
+
+/* ================= TRANSLATE APP ================= */
+window.doTranslate = () => {
+  const text = $('trInput').value.toLowerCase();
+  const target = $('targetLang').value;
+  const dict = {
+    'es': { 'hello': 'hola', 'good morning': 'buenos días', 'thank you': 'gracias' },
+    'pt': { 'hello': 'olá', 'good morning': 'bom dia', 'thank you': 'obrigado' },
+    'ja': { 'hello': 'こんにちは', 'good morning': 'おはよう', 'thank you': 'ありがとう' }
+  };
+  $('trOutput').textContent = dict[target][text] || (text + ' (' + target.toUpperCase() + ')');
+};
+
+/* ================= SOCIAL MEDIA (Cross-Tab Sync) ================= */
+let posts = JSON.parse(localStorage.getItem('social_posts')) || { youtube: [], facebook: [], instagram: [] };
+function savePosts() { localStorage.setItem('social_posts', JSON.stringify(posts)); }
+
+let mediaPreviews = { youtube: null, facebook: null, instagram: null };
+
+window.previewMedia = function(input, type) {
+  const file = input.files[0]; if (!file) return;
+  const url = URL.createObjectURL(file);
+  mediaPreviews[type] = { url, type: file.type };
+  const preview = $(type + 'Preview');
+  preview.src = file.type.startsWith('video') ? 'https://via.placeholder.com/60x60/333/fff?text=Video' : url;
+  preview.style.display = 'block';
+};
+
+window.addPost = function(type) {
+  const text = $(type === 'youtube' ? 'ytPostInput' : type === 'facebook' ? 'fbPostInput' : 'igPostInput').value.trim();
+  const media = mediaPreviews[type];
+  if (!text && !media) { toast('Please enter text or upload media'); return; }
+  
+  posts[type].unshift({ text, media, time: Date.now() });
+  $(type === 'youtube' ? 'ytPostInput' : type === 'facebook' ? 'fbPostInput' : 'igPostInput').value = '';
+  mediaPreviews[type] = null;
+  $(type === 'youtube' ? 'ytPreview' : type === 'facebook' ? 'fbPreview' : 'igPreview').style.display = 'none';
+  
+  savePosts();
+  renderSocialFeeds();
+  toast('Posted successfully!');
+};
+
+function renderMediaHTML(media, className) {
+  if (!media) return '';
+  if (media.type.startsWith('video')) return `<video src="${media.url}" class="${className}" controls></video>`;
+  return `<img src="${media.url}" class="${className}">`;
+}
+
+function renderSocialFeeds() {
+  if ($('app-youtube').classList.contains('active')) renderYT();
+  if ($('app-facebook').classList.contains('active')) renderFB();
+  if ($('app-instagram').classList.contains('active')) renderIG();
+}
+
+function renderYT() {
+  $('ytFeed').innerHTML = posts.youtube.map(p => `<div class="yt-card">${renderMediaHTML(p.media, 'yt-media')}<div class="yt-info"><div class="yt-title">${escapeHTML(p.text || 'New Video')}</div><div style="font-size:13px;color:#8e8e93;margin-top:4px;">You · Just now</div></div></div>`).join('');
+}
+function renderFB() {
+  $('fbFeed').innerHTML = posts.facebook.map(p => `<div class="fb-card"><div style="font-weight:600;margin-bottom:12px;">You</div><div>${escapeHTML(p.text)}</div>${renderMediaHTML(p.media, 'fb-media')}</div>`).join('');
+}
+function renderIG() {
+  $('igFeed').innerHTML = posts.instagram.map(p => `<div class="ig-card"><div style="padding:10px;font-weight:600;">You</div>${renderMediaHTML(p.media, 'ig-media')}<div class="ig-caption">${escapeHTML(p.text)}</div></div>`).join('');
+}
+
+// Real-time listener for social media posts
+window.addEventListener('storage', e => {
+  if (e.key === 'social_posts') {
+    posts = JSON.parse(e.newValue);
+    renderSocialFeeds();
+  }
+});
+
+/* ================= WECHAT (Cross-Tab Sync) ================= */
+let globalUsers = JSON.parse(localStorage.getItem('wechat_users')) || { '11112222': { friends: [], requests: [] }, '33334444': { friends: [], requests: [] } };
+let globalMessages = JSON.parse(localStorage.getItem('wechat_messages')) || {};
+let currentUser = sessionStorage.getItem('wechat_current_user') || null;
+let currentChatId = null;
+
+function saveDB() { localStorage.setItem('wechat_users', JSON.stringify(globalUsers)); localStorage.setItem('wechat_messages', JSON.stringify(globalMessages)); }
+function renderWeChat() {
+  if (!currentUser) { $('regState').style.display = 'block'; $('chatListState').style.display = 'none'; }
+  else { $('regState').style.display = 'none'; $('chatListState').style.display = 'flex'; $('myNumDisplay').textContent = `Logged in: ${currentUser}`; renderChatList(); updateReqBadge(); }
+}
+function updateReqBadge() { if(!globalUsers[currentUser]) return; const r=globalUsers[currentUser].requests; if(r.length>0){$('reqBadge').textContent=r.length;$('reqBadge').style.display='block';}else{$('reqBadge').style.display='none';} }
+function renderChatList() {
+  const f = globalUsers[currentUser]?.friends || [];
+  if (!f.length) { $('chatItems').innerHTML = '<div style="text-align:center;color:#666;margin-top:20px;">No friends yet</div>'; return; }
+  $('chatItems').innerHTML = f.map(x => `<div class="chat-item"><div class="chat-avatar" onclick="openChat('${x}')">👤</div><div class="chat-info" onclick="openChat('${x}')"><div class="chat-name">${x}</div><div class="chat-preview" id="preview-${x}">Start chatting...</div></div></div>`).join('');
+}
+$('regBtn').addEventListener('click', () => {
+  const p=$('regPhoneInput').value.trim();
+  if(!/^\d{8}$/.test(p)){toast('8 digits only');return;}
+  if(!globalUsers[p]){ globalUsers[p] = { friends: [], requests: [] }; saveDB(); } // Auto-create for easy testing
+  currentUser=p; sessionStorage.setItem('wechat_current_user',p); renderWeChat(); toast('Logged in');
+});
+$('switchAccBtn').addEventListener('click', () => { currentUser=null; sessionStorage.removeItem('wechat_current_user'); $('regPhoneInput').value=''; renderWeChat(); });
+$('addFriendBtn').addEventListener('click', () => { const t=$('friendPhoneInput').value.trim(); if(!globalUsers[t]){toast('Number not found');return;} globalUsers[t].requests.push(currentUser); saveDB(); toast('Request sent'); });
+$('newFriendsBtn').addEventListener('click', () => { $('requestsScreen').classList.add('active'); renderRequests(); });
+$('backToChatListFromReq').addEventListener('click', () => $('requestsScreen').classList.remove('active'));
+function renderRequests() { const r=globalUsers[currentUser]?.requests||[]; $('requestsList').innerHTML=r.map(x=>`<div class="req-item"><div>${x}</div><div class="req-actions"><button class="btn-accept" onclick="acceptReq('${x}')">Accept</button><button class="btn-decline" onclick="declineReq('${x}')">Decline</button></div></div>`).join(''); }
+window.acceptReq = (r) => { globalUsers[currentUser].friends.push(r); globalUsers[r].friends.push(currentUser); globalUsers[currentUser].requests=globalUsers[currentUser].requests.filter(x=>x!==r); saveDB(); renderRequests(); updateReqBadge(); renderChatList(); };
+window.declineReq = (r) => { globalUsers[currentUser].requests=globalUsers[currentUser].requests.filter(x=>x!==r); saveDB(); renderRequests(); updateReqBadge(); };
+window.openChat = (f) => { currentChatId=[currentUser,f].sort().join('_'); $('crName').textContent=f; renderMsgs(); $('chatRoom').classList.add('active'); };
+$('backToChatList').addEventListener('click', () => { $('chatRoom').classList.remove('active'); renderChatList(); });
+function renderMsgs() { const m=globalMessages[currentChatId]||[]; $('crMessages').innerHTML=m.map(x=>`<div class="msg-bubble ${x.sender===currentUser?'me':'friend'}">${escapeHTML(x.text)}</div>`).join(''); $('crMessages').scrollTop=$('crMessages').scrollHeight; }
+function sendMsg() { const t=$('crInput').value.trim(); if(!t)return; if(!globalMessages[currentChatId])globalMessages[currentChatId]=[]; globalMessages[currentChatId].push({sender:currentUser,text:t}); saveDB(); $('crInput').value=''; renderMsgs(); }
+$('crSendBtn').addEventListener('click', sendMsg); $('crInput').addEventListener('keydown', e => { if(e.key==='Enter') sendMsg(); });
+
+// Real-time listener for WeChat
+window.addEventListener('storage', e => {
+  if (e.key === 'wechat_users' || e.key === 'wechat_messages') {
+    globalUsers = JSON.parse(localStorage.getItem('wechat_users')) || {};
+    globalMessages = JSON.parse(localStorage.getItem('wechat_messages')) || {};
+    if ($('app-wechat').classList.contains('active')) {
+      if ($('chatRoom').classList.contains('active')) renderMsgs();
+      else if ($('requestsScreen').classList.contains('active')) renderRequests();
+      else renderChatList();
+      updateReqBadge();
+    }
+  }
+});
+
+/* STARTUP */
+(function () { document.querySelector('.battery-level').style.width = '82%'; })();
+</script>
+</body>
+</html>
